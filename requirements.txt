@@ -10,11 +10,7 @@ Pillow>=10.0.0
 # QR Code Generation
 qrcode[pil]>=7.4.0
 
-# QR Code Scanning (OpenCV)
-opencv-python-headless>=4.8.0
-
 # Data Processing
-numpy>=1.24.0
 pandas>=2.0.0
 
 # Note: The following are part of Python standard library (no need to install):

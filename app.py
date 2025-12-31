@@ -322,7 +322,7 @@ with st.sidebar:
         st.image(preview_img, caption="Ticket Preview", width=400)
 
 # --- Main Content ---
-tab1, tab2, tab3 = st.tabs(["🎫 Generate & Send Ticket", "📱 Scan & Verify", "📊 Issued Tickets"])
+tab1, tab2, tab3 = st.tabs(["🎫 Generate & Send Ticket", "� Verify Ticket", "📊 Issued Tickets"])
 
 # --- TAB 1: GENERATION ---
 with tab1:
@@ -412,53 +412,60 @@ with tab1:
                 st.success(f"🎉 Ticket issued! Invite Code: **{invite_code}**")
 
 
-# --- TAB 2: SCANNING ---
+# --- TAB 2: VERIFICATION ---
 with tab2:
     st.header("Verify Ticket at Venue")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("📸 Use camera to scan ticket QR code.")
-        img_file_buffer = st.camera_input("Take a picture of the QR code")
+    invite_code_input = st.text_input("🎫 Enter Invite Code", placeholder="e.g. ABCD1234").upper().strip()
+    verify_btn = st.button("🔍 Verify Ticket", type="primary")
 
-    with col2:
-        st.write("📁 Or upload an image of the QR code:")
-        uploaded_file = st.file_uploader("Upload QR image", type=['png', 'jpg', 'jpeg'])
-
-    # Process either camera or uploaded image
-    image_to_process = img_file_buffer or uploaded_file
-
-    if image_to_process is not None:
-        import cv2
-        import numpy as np
-
-        bytes_data = image_to_process.getvalue()
-        cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-
-        detector = cv2.QRCodeDetector()
-        data, bbox, straight_qrcode = detector.detectAndDecode(cv2_img)
-
-        if data:
-            st.write(f"🔍 Scanned Hash: `{data[:20]}...`")
+    if verify_btn or invite_code_input:
+        if not invite_code_input:
+            st.warning("Please enter an invite code.")
+        else:
+            # 1. Create hash of the input code to check against DB
+            hash_object = hashlib.sha256(invite_code_input.encode())
+            input_hash = hash_object.hexdigest()
+            
             issued_hashes = load_hash_db()
 
-            if data in issued_hashes:
+            if input_hash in issued_hashes:
                 st.balloons()
-                st.success("✅ **VALID TICKET** - Verified against database!")
+                st.success(f"✅ **VALID TICKET** - Code {invite_code_input} is verified!")
                 
+                # Try to find attendee details
+                detailed_db_file = HASH_DB_FILE.replace('.json', '_detailed.json')
+                if os.path.exists(detailed_db_file):
+                    with open(detailed_db_file, 'r') as f:
+                        try:
+                            detailed_records = json.load(f)
+                            attendee = next((r for r in detailed_records if r['hash'] == input_hash), None)
+                            if attendee:
+                                st.write("---")
+                                st.subheader("👤 Attendee Details")
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    st.write(f"**Name:** {attendee.get('name', 'N/A')}")
+                                    st.write(f"**Email:** {attendee.get('email', 'N/A')}")
+                                with col2:
+                                    st.write(f"**Issued At:** {attendee.get('issued_at', 'N/A')}")
+                        except:
+                            pass
+
+                st.divider()
                 # Option to mark as used
-                if st.checkbox("Mark ticket as used (remove from database)"):
-                    if st.button("Confirm - Mark as Used", type="primary"):
-                        issued_hashes.remove(data)
-                        with open(HASH_DB_FILE, 'w') as f:
-                            json.dump(issued_hashes, f, indent=2)
-                        st.success("Ticket marked as used!")
-                        st.rerun()
+                st.warning("⚠️ Marking as used will permanently invalidate this code.")
+                
+                # Use a unique key and check session state for confirmation
+                if st.button("Confirm - Mark as Used", type="primary"):
+                    issued_hashes.remove(input_hash)
+                    with open(HASH_DB_FILE, 'w') as f:
+                        json.dump(issued_hashes, f, indent=2)
+                    st.success(f"Ticket {invite_code_input} marked as used!")
+                    st.balloons()
+                    # We don't st.rerun() here so the success message stays visible
             else:
-                st.error("❌ **INVALID TICKET** - Hash not found in database or already used.")
-        else:
-            st.warning("⚠️ Could not detect a QR code. Try better lighting or get closer.")
+                st.error("❌ **INVALID TICKET** - Code not found in database or already used.")
 
 
 # --- TAB 3: ISSUED TICKETS ---
