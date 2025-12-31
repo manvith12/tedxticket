@@ -1,0 +1,6 @@
+__pycache__/
+.vscode/
+*.pyc
+.env
+issued_hashes.json
+issued_hashes_detailed.json

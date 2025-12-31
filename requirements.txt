@@ -1,0 +1,28 @@
+# TEDx Ticketing System - Requirements
+# For Streamlit Cloud deployment
+
+# Core Framework
+streamlit>=1.40.0
+
+# Image Processing
+Pillow>=10.0.0
+
+# QR Code Generation
+qrcode[pil]>=7.4.0
+
+# QR Code Scanning (OpenCV)
+opencv-python-headless>=4.8.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Note: The following are part of Python standard library (no need to install):
+# - smtplib (email sending)
+# - email (MIME handling)
+# - uuid (unique ID generation)
+# - hashlib (hashing)
+# - json (data storage)
+# - io (byte streams)
+# - os (file operations)
+# - glob (file searching)
